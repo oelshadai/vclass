@@ -1,0 +1,4 @@
+# Add these to your existing requirements.txt
+psycopg2-binary==2.9.7
+supabase==1.0.4
+postgrest==0.10.8
