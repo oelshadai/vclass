@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connectivity Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>School Report SaaS - API Connectivity Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="runTests()">Run All Tests</button>
+    <button onclick="testBasicAPI()">Test Basic API</button>
+    <button onclick="testCORS()">Test CORS</button>
+    <button onclick="testLogin()">Test Login Endpoint</button>
+    
+    <script>
+        const API_BASE = 'https://school-report-saas.onrender.com/api';
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            resultsDiv.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        async function testBasicAPI() {
+            addResult('Testing basic API connectivity...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    addResult(`✅ API is accessible (Status: ${response.status})`, 'success');
+                    const data = await response.json();
+                    addResult(`📊 API Response: ${JSON.stringify(data)}`, 'info');
+                } else {
+                    addResult(`❌ API returned status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ API connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCORS() {
+            addResult('Testing CORS configuration...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login/`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'content-type,authorization'
+                    }
+                });
+                
+                if (response.status === 200 || response.status === 204) {
+                    addResult(`✅ CORS is properly configured (Status: ${response.status})`, 'success');
+                    
+                    // Check CORS headers
+                    const corsHeaders = {};
+                    for (const [key, value] of response.headers.entries()) {
+                        if (key.toLowerCase().includes('access-control')) {
+                            corsHeaders[key] = value;
+                        }
+                    }
+                    addResult(`🔧 CORS Headers: ${JSON.stringify(corsHeaders)}`, 'info');
+                } else {
+                    addResult(`❌ CORS issue detected (Status: ${response.status})`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ CORS test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testLogin() {
+            addResult('Testing login endpoint...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'test_user',
+                        password: 'test_password'
+                    })
+                });
+                
+                addResult(`📡 Login endpoint responded (Status: ${response.status})`, 'info');
+                
+                if (response.status === 400 || response.status === 401) {
+                    addResult('✅ Login endpoint is working (expected auth failure)', 'success');
+                } else if (response.status === 200) {
+                    addResult('✅ Login endpoint is working (unexpected success)', 'success');
+                } else if (response.status >= 500) {
+                    addResult(`❌ Server error on login endpoint (Status: ${response.status})`, 'error');
+                }
+                
+                const data = await response.json();
+                addResult(`📊 Login response: ${JSON.stringify(data)}`, 'info');
+                
+            } catch (error) {
+                addResult(`❌ Login test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function runTests() {
+            resultsDiv.innerHTML = '';
+            addResult('Starting comprehensive API tests...', 'info');
+            
+            await testBasicAPI();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testCORS();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testLogin();
+            
+            addResult('🏁 All tests completed', 'info');
+        }
+        
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            addResult('Page loaded. Click "Run All Tests" to start testing.', 'info');
+        });
+    </script>
+</body>
+</html>
